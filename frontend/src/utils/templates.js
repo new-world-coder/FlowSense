@@ -1,12 +1,14 @@
 // Template Manager for Cadence Smart Contracts
 
-import NFTTemplate from '../templates/NFT.cdc?raw';
-import TokenTemplate from '../templates/Token.cdc?raw';
-import MarketplaceTemplate from '../templates/Marketplace.cdc?raw';
-import VaultTemplate from '../templates/Vault.cdc?raw';
-import AccessControlTemplate from '../templates/AccessControl.cdc?raw';
-import BasicNFTTemplate from '../templates/BasicNFT.cdc?raw';
-import DAOTemplate from '../templates/DAO.cdc?raw';
+import {
+  NFTTemplate,
+  BasicNFTTemplate,
+  TokenTemplate,
+  MarketplaceTemplate,
+  VaultTemplate,
+  AccessControlTemplate,
+  DAOTemplate,
+} from '../templates/templateStrings';
 
 export const contractTemplates = [
   {
