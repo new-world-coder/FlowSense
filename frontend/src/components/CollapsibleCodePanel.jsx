@@ -1,15 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, ChevronLeft, Code2 } from 'lucide-react';
+import { X, Copy, Check, ChevronLeft, Code2, Lightbulb, Loader2 } from 'lucide-react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import axios from 'axios';
 
 const CollapsibleCodePanel = ({ isOpen, onClose, code, title = "Generated Smart Contract" }) => {
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
+  const [explanation, setExplanation] = useState('');
+  const [isExplaining, setIsExplaining] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
 
   const handleCopy = () => {
     if (code) {
       navigator.clipboard.writeText(code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleExplain = async () => {
+    if (!code) return;
+
+    setIsExplaining(true);
+    setShowExplanation(true);
+
+    try {
+      const response = await axios.post('/api/contracts/explain', { code });
+      setExplanation(response.data.explanation);
+    } catch (error) {
+      setExplanation('Failed to generate explanation. Please try again.');
+      console.error('Explanation error:', error);
+    } finally {
+      setIsExplaining(false);
     }
   };
 
@@ -41,10 +64,31 @@ const CollapsibleCodePanel = ({ isOpen, onClose, code, title = "Generated Smart 
                 <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-lg flex items-center justify-center">
                   <Code2 className="w-5 h-5 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold">{title}</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
               </div>
               
               <div className="flex items-center gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleExplain}
+                  disabled={isExplaining || !code}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Explain this contract"
+                >
+                  {isExplaining ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="hidden sm:inline">Explaining...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lightbulb className="w-4 h-4" />
+                      <span className="hidden sm:inline">Explain</span>
+                    </>
+                  )}
+                </motion.button>
+
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -55,7 +99,7 @@ const CollapsibleCodePanel = ({ isOpen, onClose, code, title = "Generated Smart 
                   {copied ? (
                     <Check className="w-5 h-5 text-green-600" />
                   ) : (
-                    <Copy className="w-5 h-5" />
+                    <Copy className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                   )}
                 </motion.button>
                 
@@ -66,7 +110,7 @@ const CollapsibleCodePanel = ({ isOpen, onClose, code, title = "Generated Smart 
                   className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                   title="Close panel"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                 </motion.button>
               </div>
             </div>
@@ -74,14 +118,60 @@ const CollapsibleCodePanel = ({ isOpen, onClose, code, title = "Generated Smart 
             {/* Code Content */}
             <div className="flex-1 overflow-auto p-6">
               {code ? (
-                <motion.pre
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="bg-gray-900 dark:bg-black text-gray-100 p-6 rounded-xl overflow-x-auto text-sm font-mono leading-relaxed"
-                >
-                  <code>{code}</code>
-                </motion.pre>
+                <div className="space-y-4">
+                  {/* Code Block with Syntax Highlighting */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="rounded-xl overflow-hidden"
+                  >
+                    <SyntaxHighlighter
+                      language="swift"
+                      style={vscDarkPlus}
+                      customStyle={{
+                        margin: 0,
+                        padding: '1.5rem',
+                        fontSize: '0.875rem',
+                        lineHeight: '1.6',
+                        borderRadius: '0.75rem',
+                      }}
+                      showLineNumbers={true}
+                      wrapLines={true}
+                    >
+                      {code}
+                    </SyntaxHighlighter>
+                  </motion.div>
+
+                  {/* Explanation Section */}
+                  {showExplanation && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="glass-card p-6"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Lightbulb className="w-5 h-5 text-yellow-500" />
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                          Contract Explanation
+                        </h3>
+                      </div>
+                      
+                      {isExplaining ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+                        </div>
+                      ) : (
+                        <div className="prose dark:prose-invert max-w-none">
+                          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                            {explanation}
+                          </p>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
@@ -115,4 +205,3 @@ const CollapsibleCodePanel = ({ isOpen, onClose, code, title = "Generated Smart 
 };
 
 export default CollapsibleCodePanel;
-
